@@ -56,57 +56,60 @@ object Analysis {
     )
 
     resultDF.show(truncate = false)
-    //Calculate the Average of signals per date
-    println("Calculate the Average of signals per date : ")
-    val averageDFDate = deltaDF
-      .withColumn("date", to_date(col("signal_ts")))
-      .groupBy("date")
-      .agg(
-        avg(col("signals.`LV ActivePower (kW)`")).as("LV ActivePower (kW)"),
-        avg(col("signals.`Wind Speed (m/s)`")).as("Wind Speed (m/s)"),
-        avg(col("signals.`Theoretical_Power_Curve (KWh)`")).as("Theoretical_Power_Curve (KWh)"),
-        avg(col("signals.`Wind Direction (°)`")).as("Wind Direction (°)")
-      )
-      .filter(col("date").isNotNull)
-      .sort("date")
-    averageDFDate.show(false)
 
-
-    val resultDFDate = averageDFDate.withColumn("generation_indicator",
-      when($"LV ActivePower (kW)" < 200, "Low")
-        .when($"LV ActivePower (kW)" >= 200 && $"LV ActivePower (kW)" < 600, "Medium")
-        .when($"LV ActivePower (kW)" >= 600 && $"LV ActivePower (kW)" < 1000, "High")
-        .when($"LV ActivePower (kW)" >= 1000, "Exceptional")
-    )
-    resultDFDate.show(false)
     // DataFrame with the provided JSON
     val json =
       """
         |[
         |    {
-        |        "signals": "LV ActivePower (kW)",
+        |        "sig_name": "LV ActivePower (kW)",
         |        "sig_mapping_name": "avg_LV_ActivePower"
         |    },
         |    {
-        |        "signals": "Wind Speed (m/s)",
+        |        "sig_name": "Wind Speed (m/s)",
         |        "sig_mapping_name": "avg_Wind_Speed"
         |    },
         |    {
-        |        "signals": "Theoretical_Power_Curve (KWh)",
+        |        "sig_name": "Theoretical_Power_Curve (KWh)",
         |        "sig_mapping_name": "avg_Theoretical_Power_Curve"
         |    },
         |    {
-        |        "signals": "Wind Direction (°)",
+        |        "sig_name": "Wind Direction (°)",
         |        "sig_mapping_name": "avg_Wind_Direction"
         |    }
         |]
         |""".stripMargin
 
 
-    val jsonDF = spark.read.json(Seq(json).toDS)
-    jsonDF.show(false)
-
-
     spark.stop()
   }
 }
+
+
+
+
+
+
+
+//    //Calculate the Average of signals per date
+//    println("Calculate the Average of signals per date : ")
+//    val averageDFDate = deltaDF
+//      .withColumn("date", to_date(col("signal_ts")))
+//      .groupBy("date")
+//      .agg(
+//        avg(col("signals.`LV ActivePower (kW)`")).as("LV ActivePower (kW)"),
+//        avg(col("signals.`Wind Speed (m/s)`")).as("Wind Speed (m/s)"),
+//        avg(col("signals.`Theoretical_Power_Curve (KWh)`")).as("Theoretical_Power_Curve (KWh)"),
+//        avg(col("signals.`Wind Direction (°)`")).as("Wind Direction (°)")
+//      )
+//      .filter(col("date").isNotNull)
+//      .sort("date")
+//    averageDFDate.show(false)
+//
+//    val resultDFDate = averageDFDate.withColumn("generation_indicator",
+//      when($"LV ActivePower (kW)" < 200, "Low")
+//        .when($"LV ActivePower (kW)" >= 200 && $"LV ActivePower (kW)" < 600, "Medium")
+//        .when($"LV ActivePower (kW)" >= 600 && $"LV ActivePower (kW)" < 1000, "High")
+//        .when($"LV ActivePower (kW)" >= 1000, "Exceptional")
+//    )
+//  resultDFDate.show(false)
