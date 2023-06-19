@@ -5,7 +5,7 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{SparkSession, functions}
 
-object Cons {
+object Subscriber {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName("KafkaConsumerJob")
