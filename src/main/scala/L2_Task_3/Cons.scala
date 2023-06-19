@@ -1,6 +1,9 @@
-import org.apache.spark.sql.functions.{col, current_date, current_timestamp, lit, to_date, to_timestamp}
-import org.apache.spark.sql.{SparkSession, functions}
+package L2_Task_3
+
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.{SparkSession, functions}
 
 object Cons {
   def main(args: Array[String]): Unit = {
@@ -25,9 +28,9 @@ object Cons {
 
     // Process the streaming data
     val processedDF = kafkaDF.selectExpr("CAST(value AS STRING)")
-
+    val processDF2 = kafkaDF.withColumn("value",col("value").cast(StringType))
     val splitColumns = functions.split(col("value"), ",")
-    val columns = processedDF.select(
+    val columns = processDF2.select(
       splitColumns.getItem(0).as("Date/Time"),
       splitColumns.getItem(1).as("LV ActivePower (kW)"),
       splitColumns.getItem(2).as("Wind Speed (m/s)"),
@@ -35,10 +38,11 @@ object Cons {
       splitColumns.getItem(4).as("Wind Direction (°)")
     )
 
+
     // Transform the data into the desired format
     val transformedDF = columns.select(
-      to_date(col("Date/Time"), "dd MM yyyy HH:mm").as("signal_date"),
-      to_timestamp(col("Date/Time"), "dd MM yyyy HH:mm").as("signal_ts"),
+      to_date(col("Date/Time"), "dd MM yyyy").as("signal_date"),
+      to_timestamp(col("Date/Time"), "dd MM yyyy HH:mm:ss").as("signal_ts"),
       functions.map(
         lit("LV ActivePower (kW)"), col("LV ActivePower (kW)"),
         lit("Wind Speed (m/s)"), col("Wind Speed (m/s)"),

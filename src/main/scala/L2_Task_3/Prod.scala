@@ -1,5 +1,9 @@
-import org.apache.spark.sql.SparkSession
+package L2_Task_3
+
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.apache.spark.sql.SparkSession
+
+import java.util.Properties
 
 object Prod {
   def main(args: Array[String]): Unit = {
@@ -12,21 +16,21 @@ spark.sparkContext.setLogLevel("OFF")
     val df = spark.read
       .option("header", true)
       .option("delimiter","\t")
-      .csv("C:\\tmp\\output\\Task\\TaskSchema\\T1.csv")
+      .csv("C:\\tmp\\output\\Task\\File\\T1.csv")
 
     // Configure Kafka producer
     val kafkaBrokers = "localhost:9092,localhost:9093,localhost:9094,localhost:9095"
     val kafkaTopic = "a"
-    val kafkaProps = new java.util.Properties()
-    kafkaProps.put("bootstrap.servers", kafkaBrokers)
-    kafkaProps.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    kafkaProps.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    val props = new Properties()
+    props.put("bootstrap.servers", kafkaBrokers)
+    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
 
     // Publish records to Kafka
     df.foreachPartition { partition: Iterator[org.apache.spark.sql.Row] =>
-      val producer = new KafkaProducer[String, String](kafkaProps)
+      val producer = new KafkaProducer[String, String](props)
       partition.foreach { row =>
-        val record = new ProducerRecord[String, String](kafkaTopic, row.mkString("\t"))
+        val record = new ProducerRecord[String, String](kafkaTopic, row.mkString(","))
         producer.send(record)
       }
       producer.close()
