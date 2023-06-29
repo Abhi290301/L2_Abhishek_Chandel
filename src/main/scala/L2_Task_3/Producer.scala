@@ -20,7 +20,7 @@ spark.sparkContext.setLogLevel("OFF")
 
     // Configure Kafka producer
     val kafkaBrokers = "localhost:9092,localhost:9093,localhost:9094,localhost:9095"
-    val kafkaTopic = "a"
+    val kafkaTopic = "source"
     val props = new Properties()
     props.put("bootstrap.servers", kafkaBrokers)
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
