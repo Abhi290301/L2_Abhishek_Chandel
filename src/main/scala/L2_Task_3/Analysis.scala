@@ -11,8 +11,9 @@ object Analysis {
       .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
       .master("local")
       .getOrCreate()
+
     spark.sparkContext.setLogLevel("OFF")
-    import spark.implicits._
+
     val deltaTablePath = "C:\\tmp\\output\\Task\\DeltaData"
 
     val deltaDF = spark.read.format("delta").load(deltaTablePath)
@@ -44,10 +45,11 @@ object Analysis {
       )
       .filter(col("hour") =!= 0)
       .sort("hour")
+    averageDF.show(100, truncate = false)
 
-    averageDF.show(truncate = false)
+    import spark.implicits._
 
-
+    // Add generation_indicator column based on LV ActivePower values
     val resultDF = averageDF.withColumn("generation_indicator",
       when($"LV ActivePower (kW)" < 200, "Low")
         .when($"LV ActivePower (kW)" >= 200 && $"LV ActivePower (kW)" < 600, "Medium")
@@ -56,60 +58,43 @@ object Analysis {
     )
 
     resultDF.show(truncate = false)
-
-    // DataFrame with the provided JSON
+    // Create a DataFrame with the provided JSON
     val json =
       """
         |[
-        |    {
-        |        "sig_name": "LV ActivePower (kW)",
-        |        "sig_mapping_name": "avg_LV_ActivePower"
-        |    },
-        |    {
-        |        "sig_name": "Wind Speed (m/s)",
-        |        "sig_mapping_name": "avg_Wind_Speed"
-        |    },
-        |    {
-        |        "sig_name": "Theoretical_Power_Curve (KWh)",
-        |        "sig_mapping_name": "avg_Theoretical_Power_Curve"
-        |    },
-        |    {
-        |        "sig_name": "Wind Direction (°)",
-        |        "sig_mapping_name": "avg_Wind_Direction"
-        |    }
+        |{
+        |'sig_name': 'LV ActivePower (kW)',
+        |'sig_mapping_name': 'active_power_average'
+        |},{
+        |'sig_name': 'Wind Speed (m/s)',
+        |'sig_mapping_name': 'wind_speed_average'
+        |}{
+        |'sig_name': 'Theoretical_Power_Curve (KWh)',
+        |'sig_mapping_name': 'theo_power_curve_average'
+        |},{
+        |'sig_name' : 'Wind Direction (°)',
+        |'sig_mapping_name': 'wind_direction_average'
+        |}
         |]
         |""".stripMargin
 
+    val jsonDF = spark.read.json(Seq(json).toDS())
+    jsonDF.show(false)
+    val mappingArray = jsonDF.collect()
+    val joinedDF = resultDF.join(broadcast(jsonDF), col("sig_name") === col("sig_mapping_name"), "left_outer")
+    var finalDF = joinedDF
+    for (row <- mappingArray) {
+      val sigMappingName = row.getAs[String]("sig_mapping_name")
+      val sigName = row.getAs[String]("sig_name")
 
-    spark.stop()
+      finalDF = finalDF.withColumnRenamed(sigName, sigMappingName)
+    }
+
+    finalDF.show(false)
+
+    val resultDF22 = finalDF.drop("sig_name", "sig_mapping_name")
+
+    resultDF22.show(false)
+
   }
 }
-
-
-
-
-
-
-
-//    //Calculate the Average of signals per date
-//    println("Calculate the Average of signals per date : ")
-//    val averageDFDate = deltaDF
-//      .withColumn("date", to_date(col("signal_ts")))
-//      .groupBy("date")
-//      .agg(
-//        avg(col("signals.`LV ActivePower (kW)`")).as("LV ActivePower (kW)"),
-//        avg(col("signals.`Wind Speed (m/s)`")).as("Wind Speed (m/s)"),
-//        avg(col("signals.`Theoretical_Power_Curve (KWh)`")).as("Theoretical_Power_Curve (KWh)"),
-//        avg(col("signals.`Wind Direction (°)`")).as("Wind Direction (°)")
-//      )
-//      .filter(col("date").isNotNull)
-//      .sort("date")
-//    averageDFDate.show(false)
-//
-//    val resultDFDate = averageDFDate.withColumn("generation_indicator",
-//      when($"LV ActivePower (kW)" < 200, "Low")
-//        .when($"LV ActivePower (kW)" >= 200 && $"LV ActivePower (kW)" < 600, "Medium")
-//        .when($"LV ActivePower (kW)" >= 600 && $"LV ActivePower (kW)" < 1000, "High")
-//        .when($"LV ActivePower (kW)" >= 1000, "Exceptional")
-//    )
-//  resultDFDate.show(false)

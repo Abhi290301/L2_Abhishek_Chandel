@@ -14,7 +14,7 @@ object Producer {
 spark.sparkContext.setLogLevel("OFF")
     // Read the CSV file
     val df = spark.read
-      .option("header", true)
+      .option("header", value = true)
       .option("delimiter","\t")
       .csv("C:\\tmp\\output\\Task\\File\\T1.csv")
 

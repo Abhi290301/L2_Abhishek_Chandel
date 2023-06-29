@@ -17,8 +17,8 @@ object Subscriber {
     spark.sparkContext.setCheckpointDir("C:\\tmp\\output\\Task\\CheckProd")
 
     // Read data from Kafka
-    val kafkaBrokers = "localhost:9092,localhost:9093,localhost:9094,localhost:9095"
-    val kafkaTopic = "a"
+    val kafkaBrokers = "localhost:9092"
+    val kafkaTopic = "testing20"
     val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaBrokers)
