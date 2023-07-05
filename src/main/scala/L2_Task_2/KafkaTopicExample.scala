@@ -9,7 +9,7 @@ object KafkaTopicExample {
   def main(args: Array[String]): Unit = {
 
     val bootstrapServers = "localhost:9092"
-    val topicName = "a190"
+    val topicName = "Semi"
     val numPartitions = 5
     val replicationFactor = 1
 
@@ -32,3 +32,4 @@ object KafkaTopicExample {
     adminClient.close()
   }
 }
+

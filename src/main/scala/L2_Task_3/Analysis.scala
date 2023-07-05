@@ -89,7 +89,6 @@ object Analysis {
 
       finalDF = finalDF.withColumnRenamed(sigName, sigMappingName)
     }
-
     finalDF.show(false)
 
     val resultDF22 = finalDF.drop("sig_name", "sig_mapping_name")

@@ -25,10 +25,10 @@ object RDDEx {
     //    spark.read.csv("C:\\tmp\\output\\1Ex-31may").printSchema()
     spark.read.csv ( "C:\\tmp\\stream.csv" ).printSchema ()
     println ( "With InferSchema :" )
-    spark.read.option ( "header", "true" ).option ( "Delimeter", "|" ).option ( "inferSchema", "true" ).csv ( "C:\\tmp\\stream.csv" ).printSchema ()
+    spark.read.option ( "header", "true" ).option ( "Delimiter", "|" ).option ( "inferSchema", "true" ).csv ( "C:\\tmp\\stream.csv" ).printSchema ()
     spark.read.option ( "inferSchema", value = true ).csv ( "C:\\tmp\\testingCSV.csv" ).printSchema ()
 
-    //Creating RDD from the textfile
+    //Creating RDD from the text file
 
     val readRDD = spark.sparkContext.textFile ( "C:\\tmp\\data.txt" )
     readRDD.collect ().foreach ( println )

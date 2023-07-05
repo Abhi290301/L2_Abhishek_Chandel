@@ -7,20 +7,22 @@ import java.util.Properties
 
 object Producer {
   def main(args: Array[String]): Unit = {
+
     val spark = SparkSession.builder()
-      .appName("CSVToKafkaJob")
+      .appName("Producer")
       .master("local")
       .getOrCreate()
-spark.sparkContext.setLogLevel("OFF")
+
+    spark.sparkContext.setLogLevel("OFF")
     // Read the CSV file
     val df = spark.read
       .option("header", value = true)
-      .option("delimiter","\t")
+      .option("delimiter", ",")
       .csv("C:\\tmp\\output\\Task\\File\\T1.csv")
 
     // Configure Kafka producer
-    val kafkaBrokers = "localhost:9092,localhost:9093,localhost:9094,localhost:9095"
-    val kafkaTopic = "source"
+    val kafkaBrokers = "localhost:9092"
+    val kafkaTopic = "sou"
     val props = new Properties()
     props.put("bootstrap.servers", kafkaBrokers)
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
@@ -33,9 +35,8 @@ spark.sparkContext.setLogLevel("OFF")
         val record = new ProducerRecord[String, String](kafkaTopic, row.mkString(","))
         producer.send(record)
       }
-      producer.close()
+      producer.wait()
     }
-
     spark.stop()
   }
 }

@@ -5,6 +5,8 @@ import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{SparkSession, functions}
 
+import java.util.Properties
+
 object Subscriber {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
@@ -28,15 +30,19 @@ object Subscriber {
 
     // Process the streaming data
     val processedDF = kafkaDF.selectExpr("CAST(value AS STRING)")
-    val processDF2 = kafkaDF.withColumn("value",col("value").cast(StringType))
     val splitColumns = functions.split(col("value"), ",")
-    val columns = processDF2.select(
+    val columns = processedDF.select(
       splitColumns.getItem(0).as("Date/Time"),
       splitColumns.getItem(1).as("LV ActivePower (kW)"),
       splitColumns.getItem(2).as("Wind Speed (m/s)"),
       splitColumns.getItem(3).as("Theoretical_Power_Curve (KWh)"),
       splitColumns.getItem(4).as("Wind Direction (°)")
     )
+
+    val connectionProperties = new Properties()
+    connectionProperties.put("user","superset")
+    connectionProperties.put("password","superset")
+    connectionProperties.put("url","postgresql://superset:superset@db:5432/superset")
 
 
     // Transform the data into the desired format
@@ -61,6 +67,7 @@ object Subscriber {
       .trigger(Trigger.ProcessingTime("10 seconds"))
       .start(deltaDirectory)
 
+    import spark.implicits._
     // Define the output sink
     val outputSink = columns.writeStream
       .format("console")
@@ -69,7 +76,20 @@ object Subscriber {
       .trigger(Trigger.ProcessingTime("10 seconds"))
       .start()
 
-    outputSink.awaitTermination()
+
+
+    println("Sorted Data")
+/*
+    columns.sort("Date/Time").writeStream
+      .format("complete")
+      .option("truncate", "false")
+      .outputMode(OutputMode.Append())
+      .trigger(Trigger.ProcessingTime("10 seconds"))
+      .start()
+
+
+ */
+
     spark.stop()
   }
 }

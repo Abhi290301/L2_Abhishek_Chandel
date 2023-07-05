@@ -11,13 +11,14 @@ object Producer {
     val spark = SparkSession.builder()
       .appName("StreamingToKafkaJob")
       .master("local")
+      .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("OFF")
 
     // Configure Kafka producer
-    val kafkaBrokers = "localhost:9092,localhost:9093,localhost:9094,localhost:9095"
-    val kafkaTopic = "a190"
+    val kafkaBrokers = "localhost:9092"
+    val kafkaTopic = "semis"
     val props = new Properties()
     props.put("bootstrap.servers", kafkaBrokers)
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
@@ -27,12 +28,11 @@ object Producer {
     val csvFilePath = "C:\\tmp\\output\\Task\\File\\T1.csv"
     val csvData = spark.read
       .option("header", value = true)
-      .option("delimiter","\t")
+      .option("delimiter",",")
       .csv(csvFilePath)
 
     // Publish records to Kafka from CSV data
     publishToKafka(csvData, kafkaTopic, props)
-
 
     // Read data from a streaming source
     val sourceTopic = "source"
@@ -40,7 +40,7 @@ object Producer {
       "bootstrap.servers" -> kafkaBrokers,
       "key.deserializer" -> "org.apache.kafka.common.serialization.StringDeserializer",
       "value.deserializer" -> "org.apache.kafka.common.serialization.StringDeserializer",
-      "group.id" -> "my_consumer_group_id"
+      "group.id" -> "turbine_group_id"
     )
 
     val streamData = spark.readStream
@@ -64,7 +64,7 @@ object Producer {
     spark.stop()
   }
 
-  def publishToKafka(data: DataFrame, topic: String, props: Properties): Unit = {
+  private def publishToKafka(data: DataFrame, topic: String, props: Properties): Unit = {
     data.foreachPartition { partition: Iterator[org.apache.spark.sql.Row] =>
       val producer = new KafkaProducer[String, String](props)
       partition.foreach { row =>
