@@ -16,7 +16,7 @@ object SubscribeDataDates {
 
     // Read data from Kafka
     val kafkaBrokers = "localhost:9092"
-    val kafkaTopic = "Semi"
+    val kafkaTopic = "Friday1"
     val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaBrokers)
@@ -33,7 +33,8 @@ object SubscribeDataDates {
       splitColumns.getItem(2).as("Wind Speed (m/s)"),
       splitColumns.getItem(3).as("Theoretical_Power_Curve (KWh)"),
       splitColumns.getItem(4).as("Wind Direction (°)")
-    )
+    ).filter(col("LV ActivePower (kW)") > 0)
+
     //Print data as per day data
     val transformedDF2 = columns.select(
       to_date(col("Date/Time"), "dd MM yyyy").as("signal_date"),
@@ -46,9 +47,9 @@ object SubscribeDataDates {
       .groupBy("date")
       .agg(count("*").as("count"),
         sum("LV ActivePower (kW)").as("total_LV_ActivePower"),
-        sum("Wind Speed (m/s)").as("total_Wind_Speed"),
+        avg("Wind Speed (m/s)").as("Avg_Wind_Speed"),
         sum("Theoretical_Power_Curve (KWh)").as("total_Theoretical_Power_Curve"),
-        avg("Wind Direction (°)").as("total_Wind_Direction")
+        avg("Wind Direction (°)").as("Avg Wind Direction")
       ).orderBy("date")
       .drop("signal_date", "LV ActivePower (kW)", "Wind Speed (m/s)", "Theoretical_Power_Curve (KWh)", "Wind Direction (°)", "create_date", "create_ts")
     val outputSinkDate = transformedDF2.writeStream
@@ -61,7 +62,7 @@ object SubscribeDataDates {
     val pgProperties = new java.util.Properties()
     pgProperties.setProperty("user", "postgres")
     pgProperties.setProperty("password", "123456")
-    val tableName = "TurbineDataDate"
+    val tableName = "FinalPerDayData"
     val postgreSink2 = transformedDF2.writeStream
       .foreachBatch { (batchDF: org.apache.spark.sql.DataFrame, _: Long) =>
         batchDF.write
@@ -74,7 +75,7 @@ object SubscribeDataDates {
 
 
         // Read data from PostgreSQL table
-
+/*
         val df2 = spark.read
           .jdbc(pgURL, tableName, pgProperties)
 
@@ -84,11 +85,13 @@ object SubscribeDataDates {
         df2.write
           .format("csv")
           .option("header", "true")
-          .mode("overwrite")
+          .mode("ignore")
           .save("c:\\tmp\\output\\TurbineSQLDataPerDate")
 
 
 
+
+ */
     postgreSink2.awaitTermination()
     outputSinkDate.awaitTermination()
   }

@@ -2,7 +2,6 @@ package L2_Task_3
 
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
-import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{SparkSession, functions}
 
 import java.util.Properties
@@ -40,9 +39,9 @@ object Subscriber {
     )
 
     val connectionProperties = new Properties()
-    connectionProperties.put("user","superset")
-    connectionProperties.put("password","superset")
-    connectionProperties.put("url","postgresql://superset:superset@db:5432/superset")
+    connectionProperties.put("user", "superset")
+    connectionProperties.put("password", "superset")
+    connectionProperties.put("url", "postgresql://superset:superset@db:5432/superset")
 
 
     // Transform the data into the desired format
@@ -66,29 +65,26 @@ object Subscriber {
       .outputMode(OutputMode.Append())
       .trigger(Trigger.ProcessingTime("10 seconds"))
       .start(deltaDirectory)
-
-    import spark.implicits._
     // Define the output sink
     val outputSink = columns.writeStream
       .format("console")
-      .option("truncate","false")
-      .outputMode(OutputMode.Append())
-      .trigger(Trigger.ProcessingTime("10 seconds"))
-      .start()
-
-
-
-    println("Sorted Data")
-/*
-    columns.sort("Date/Time").writeStream
-      .format("complete")
       .option("truncate", "false")
       .outputMode(OutputMode.Append())
       .trigger(Trigger.ProcessingTime("10 seconds"))
       .start()
 
 
- */
+    println("Sorted Data")
+    /*
+        columns.sort("Date/Time").writeStream
+          .format("complete")
+          .option("truncate", "false")
+          .outputMode(OutputMode.Append())
+          .trigger(Trigger.ProcessingTime("10 seconds"))
+          .start()
+
+
+     */
 
     spark.stop()
   }

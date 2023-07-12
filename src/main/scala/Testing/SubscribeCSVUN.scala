@@ -9,8 +9,6 @@ object SubscribeCSVUN {
     val spark = SparkSession.builder()
       .appName("KafkaConsumerJob")
       .master("local")
-      .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-      .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
       .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
       .getOrCreate()
     spark.sparkContext.setLogLevel("OFF")
@@ -18,7 +16,7 @@ object SubscribeCSVUN {
 
     // Read data from Kafka
     val kafkaBrokers = "localhost:9092"
-    val kafkaTopic = "Semi"
+    val kafkaTopic = "Friday1"
     val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaBrokers)
@@ -28,19 +26,19 @@ object SubscribeCSVUN {
 
     // Process the streaming data
     val processedDF = kafkaDF.selectExpr("CAST(value AS STRING)")
-    val splitColumns = functions.split(col("value"), ",")
+    val splitColumns = split(col("value"), ",")
     val columns = processedDF.select(
       splitColumns.getItem(0).as("Date/Time"),
       splitColumns.getItem(1).as("LV ActivePower (kW)"),
       splitColumns.getItem(2).as("Wind Speed (m/s)"),
       splitColumns.getItem(3).as("Theoretical_Power_Curve (KWh)"),
       splitColumns.getItem(4).as("Wind Direction (°)")
-    )
+    ).filter(col("LV ActivePower (kW)") > 0)
 
     //Initially Transformed Data
     val transformedDF1 = columns.select(
       to_date(col("Date/Time"), "dd MM yyyy").as("signal_date"),
-      to_timestamp(col("Date/Time"), "dd MM yyyy HH:mm").as("signal_ts"),
+      to_timestamp(col("Date/Time"), " HH:mm").as("signal_ts"),
       col("LV ActivePower (kW)").as("LV ActivePower (kW)"),
       col("Wind Speed (m/s)").as("Wind Speed (m/s)"),
       col("Theoretical_Power_Curve (KWh)").as("Theoretical_Power_Curve (KWh)"),
@@ -59,7 +57,7 @@ object SubscribeCSVUN {
     val pgProperties = new java.util.Properties()
     pgProperties.setProperty("user", "postgres")
     pgProperties.setProperty("password", "123456")
-    val tableName = "TurbineDataComplete"
+    val tableName = "FinalCompleteData"
     val postgreSink1 = transformedDF1.writeStream
       .foreachBatch { (batchDF: org.apache.spark.sql.DataFrame, _: Long) =>
         batchDF.write
@@ -72,7 +70,7 @@ object SubscribeCSVUN {
 
 
     // Read data from PostgreSQL table
-
+/*
     val df  = spark.read
       .jdbc(pgURL, tableName, pgProperties)
 
@@ -82,9 +80,9 @@ object SubscribeCSVUN {
     df.write
       .format("csv")
       .option("header", "true")
-      .mode("overwrite")
+      .mode("ignore")
       .save("c:\\tmp\\output\\TurbineSQLDataComplete")
-
+ */
     postgreSink1.awaitTermination()
     outputSink1.awaitTermination()
   }

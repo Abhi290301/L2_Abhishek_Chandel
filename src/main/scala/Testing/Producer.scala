@@ -17,7 +17,7 @@ object Producer {
 
     // Configure Kafka producer
     val kafkaBrokers = "localhost:9092"
-    val kafkaTopic = "Semi"
+    val kafkaTopic = "Friday1"
     val props = new Properties()
     props.put("bootstrap.servers", kafkaBrokers)
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")

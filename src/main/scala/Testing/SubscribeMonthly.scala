@@ -17,7 +17,7 @@ object SubscribeMonthly {
 
     // Read data from Kafka
     val kafkaBrokers = "localhost:9092"
-    val kafkaTopic = "1"
+    val kafkaTopic = "Friday1"
     val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaBrokers)
@@ -42,15 +42,15 @@ object SubscribeMonthly {
       col("Wind Speed (m/s)").as("Wind Speed (m/s)"),
       col("Theoretical_Power_Curve (KWh)").as("Theoretical_Power_Curve (KWh)"),
       col("Wind Direction (°)").as("Wind Direction (°)")
-    )
+    ).filter(col("LV ActivePower (kW)" ) > 0)
       .withColumn("month", month(col("signal_date")))
       .groupBy("month")
       .agg(
         count("*").as("count"),
         sum("LV ActivePower (kW)").as("total_LV_ActivePower"),
-        sum("Wind Speed (m/s)").as("total_Wind_Speed"),
+        avg("Wind Speed (m/s)").as("AVG_Wind_Speed"),
         sum("Theoretical_Power_Curve (KWh)").as("total_Theoretical_Power_Curve"),
-        sum("Wind Direction (°)").as("total_Wind_Direction")
+        avg("Wind Direction (°)").as("AVG_Wind_Direction")
       )
       .orderBy("month")
       .drop("signal_date", "LV ActivePower (kW)", "Wind Speed (m/s)", "Theoretical_Power_Curve (KWh)", "Wind Direction (°)", "create_date", "create_ts")
@@ -66,7 +66,7 @@ object SubscribeMonthly {
     val pgProperties = new java.util.Properties()
     pgProperties.setProperty("user", "postgres")
     pgProperties.setProperty("password", "123456")
-    val tableName = "TurbineDataMonth"
+    val tableName = "FinalPerMonthsData"
     val postgreSink3 = transformedDFMonths.writeStream
       .foreachBatch { (batchDF: org.apache.spark.sql.DataFrame, _: Long) =>
         batchDF.write
@@ -78,7 +78,7 @@ object SubscribeMonthly {
       .start()
 
     // Read data from PostgreSQL table
-
+/*
     val df3 = spark.read
       .jdbc(pgURL, tableName, pgProperties)
 
@@ -88,9 +88,9 @@ object SubscribeMonthly {
     df3.write
       .format("csv")
       .option("header", "true")
-      .mode("overwrite")
+      .mode("ignore")
       .save("c:\\tmp\\output\\TurbineSQLDataMonth")
-
+*/
 
  postgreSink3.awaitTermination()
 outputSink3.awaitTermination()

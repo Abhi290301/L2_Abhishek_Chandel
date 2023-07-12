@@ -18,7 +18,7 @@ object SubscribeComplete {
 
     // Read data from Kafka
     val kafkaBrokers = "localhost:9092"
-    val kafkaTopic = "PG"
+    val kafkaTopic = "Friday1"
     val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaBrokers)

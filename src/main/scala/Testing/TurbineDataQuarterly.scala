@@ -18,7 +18,7 @@ object TurbineDataQuarterly {
 
     // Read data from Kafka
     val kafkaBrokers = "localhost:9092"
-    val kafkaTopic = "Semi"
+    val kafkaTopic = "Friday1"
     val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaBrokers)
@@ -48,7 +48,7 @@ object TurbineDataQuarterly {
       .agg(
         count("*").as("count"),
         sum("LV ActivePower (kW)").as("total_LV_ActivePower"),
-        sum("Wind Speed (m/s)").as("total_Wind_Speed"),
+        avg("Wind Speed (m/s)").as("total_Wind_Speed"),
         sum("Theoretical_Power_Curve (KWh)").as("total_Theoretical_Power_Curve"),
         avg("Wind Direction (°)").as("total_Wind_Direction")
       )
@@ -66,7 +66,7 @@ object TurbineDataQuarterly {
     val pgProperties = new java.util.Properties()
     pgProperties.setProperty("user", "postgres")
     pgProperties.setProperty("password", "123456")
-    val tableName = "TurbineDataQuarterly"
+    val tableName = "FinalPerQuarterData"
     val postgreSink4 = transformedDFQuarterly.writeStream
       .foreachBatch { (batchDF: org.apache.spark.sql.DataFrame, _: Long) =>
         batchDF.write
@@ -79,23 +79,19 @@ object TurbineDataQuarterly {
 
 
     // Read data from PostgreSQL table
+    /*
+        val df4 = spark.read
+          .jdbc(pgURL, tableName, pgProperties)
 
-      val df4 = spark.read
-        .jdbc(pgURL, tableName, pgProperties)
+        // Perform operations on the DataFrame
+        df4.show()
 
-      // Perform operations on the DataFrame
-      df4.show()
-
-      df4.write
-        .format("csv")
-        .option("header", "true")
-        .mode("overwrite")
-        .save("c:\\tmp\\output\\TurbineSQLDataQuarterly")
-
-
-
-
-    postgreSink4.awaitTermination()
+        df4.write
+          .format("csv")
+          .option("header", "true")
+          .mode("ignore")
+          .save("c:\\tmp\\output\\TurbineSQLDataQuarterly")
+     */
     outputSink4.awaitTermination()
   }
 }
